@@ -1,0 +1,11 @@
+# Alle Felder muessen belegt sein
+export COUNTRYNAME=DE
+export STATEPROVINCENAME=SomethingSomething
+export LOCALITYNAME=Home
+export ORGNAME="IT"
+export OUNAME="Cloud"
+export EMAIL="e@mail.com"
+# Passwort für den CA Key
+export PASS="1234567890"
+# Passwort für die PKCS12 Dateien
+export PKCS12PASS="PKCS12"

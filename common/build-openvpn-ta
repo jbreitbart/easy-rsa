@@ -1,0 +1,31 @@
+#!/bin/sh
+
+#
+# Build a tls shared secret key
+#
+
+SCR_NAME=`basename $0`
+FULLPATH=`readlink -f $0`
+SSL_DIR=`echo $FULLPATH | sed "s/\/common\/$SCR_NAME//g"`
+KEY_CONFIG=$SSL_DIR/openssl.cnf
+KEY_DIR=$SSL_DIR/certs
+
+if [ -f $KEY_DIR/ta.key ]
+then
+  echo "Tls-auth shared secret existiert bereits. Breche ab"
+  echo "Verzeichnis muss evtl. neu initialisiert werden"
+  exit 0
+fi
+
+export KEY_COMMON="Certification Authority"
+export SSL_DIR
+. $SSL_DIR/common/config
+
+
+if test $KEY_DIR; then
+        openvpn --genkey --secret $KEY_DIR/ta.key
+        chmod 0600 $KEY_DIR/ta.key
+else
+        echo you must define KEY_DIR
+fi
+

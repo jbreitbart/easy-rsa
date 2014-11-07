@@ -1,0 +1,33 @@
+#!/bin/sh
+
+#
+# Build a dh key
+#
+
+SCR_NAME=`basename $0`
+FULLPATH=`readlink -f $0`
+SSL_DIR=`echo $FULLPATH | sed "s/\/common\/$SCR_NAME//g"`
+KEY_CONFIG=$SSL_DIR/openssl.cnf
+KEY_DIR=$SSL_DIR/certs
+
+KEY_SIZE=2048
+
+if [ -f $KEY_DIR/dh$KEY_SIZE.pem ]
+then
+  echo "Diffie-Hellman Parameter existiert bereits. Breche ab"
+  echo "Verzeichnis muss evtl. neu initialisiert werden"
+  exit 0
+fi
+
+export KEY_COMMON="Certification Authority"
+export SSL_DIR
+. $SSL_DIR/common/config
+
+
+if test $KEY_DIR; then
+        openssl dhparam -out $KEY_DIR/dh$KEY_SIZE.pem $KEY_SIZE
+        chmod 0600 $KEY_DIR/dh$KEY_SIZE.pem
+else
+        echo you must define KEY_DIR
+fi
+

@@ -1,0 +1,60 @@
+#!/bin/sh
+
+#
+# Make a certificate/private key pair using a locally generated
+# root certificate.
+#
+
+if test $# -ne 1; then
+        echo "usage: build-key <name>";
+        exit 1
+fi
+
+SCR_NAME=`basename $0`
+FULLPATH=`readlink -f $0`
+SSL_DIR=`echo $FULLPATH | sed "s/\/common\/$SCR_NAME//g"`
+KEY_CONFIG=$SSL_DIR/openssl_server.cnf
+KEY_DIR=$SSL_DIR/certs
+
+if [ -f $KEY_DIR/$1.key ]
+then
+  echo "Zertifikat fuer $1 existiert bereits. Breche ab"
+  exit 0
+fi
+
+export KEY_COMMON="$1"
+export SSL_DIR
+. $SSL_DIR/common/config
+
+if test $KEY_DIR; then
+        cd $KEY_DIR && \
+        openssl req -sha256 -batch -nodes -new -keyout $1.key -out $1.csr -config $KEY_CONFIG && \
+        openssl ca -batch -out $1.crt -in $1.csr -config $KEY_CONFIG -passin pass:"$PASS" && \
+        chmod 0600 $1.key
+
+        openssl pkcs12 -export -in $1.crt -inkey $1.key -certfile $KEY_DIR/ca.crt -name $1 -out $1.p12 -password env:PKCS12PASS && \
+        chmod 0600 $1.p12
+
+        cp $SSL_DIR/common/vpn-config $1.ovpn
+        echo "<ca>" >> $1.ovpn
+        cat ca.crt >> $1.ovpn
+        echo "</ca>" >> $1.ovpn
+
+        if test $KEY_DIR/ta.key; then
+                echo "<tls-auth>" >> $1.ovpn
+                cat ta.key >> $1.ovpn 
+                echo "</tls-auth>" >> $1.ovpn
+                echo "key-direction 1" >> $1.ovpn
+        fi
+
+        cp $1.ovpn $1-key.ovpn
+        echo "<cert>" >> $1-key.ovpn  && \
+        cat $1.crt >> $1-key.ovpn  && \
+        echo "</cert>" >> $1-key.ovpn  && \
+        echo "<key>" >> $1-key.ovpn  && \
+        cat $1.key >> $1-key.ovpn  && \
+        echo "</key>" >> $1-key.ovpn
+        chmod 0600 $1-key.ovpn
+else
+        echo you must define KEY_DIR
+fi

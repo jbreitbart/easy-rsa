@@ -1,0 +1,42 @@
+#!/bin/sh
+
+#
+# Verzeichnis fuer neue CA vorbereiten
+#
+
+SCR_NAME=`basename $0`
+FULLPATH=`readlink -f $0`
+SSL_DIR=`echo $FULLPATH | sed "s/\/common\/$SCR_NAME//g"`
+KEY_CONFIG=$SSL_DIR/openssl.cnf
+
+continue=1
+for object in cacert.pem certs private serial index.txt index.txt.attr
+do
+  if [ -e $SSL_DIR/$object ]
+  then
+    if [ "$1" = "-f" ]
+    then
+      echo "Loesche $SSL_DIR/$object"
+      rm -rf $SSL_DIR/$object*
+    else
+      continue=0
+    fi
+  fi
+done
+if [ $continue -eq 0 ]
+then
+  echo "\nDas Verzeichnis $SSL_DIR ist nicht leer\n$0 -f aufrufen, um es dennoch zu initialisieren." 
+  echo "ACHTUNG: Alle darin enthaltenen Schluessel und Zertifikate werden geloescht\n"
+else
+  if [ "$2" != "-e" ]
+  then
+    mkdir $SSL_DIR/certs
+    mkdir $SSL_DIR/private
+    touch $SSL_DIR/index.txt
+    touch $SSL_DIR/index.txt.attr
+    echo "01" > $SSL_DIR/serial
+    cp $SSL_DIR/openssl.cnf $SSL_DIR/openssl_server.cnf
+    echo "[ usr_cert ]" >> $SSL_DIR/openssl_server.cnf
+    echo "nsCertType                    = server" >> $SSL_DIR/openssl_server.cnf
+  fi
+fi
